@@ -23,7 +23,7 @@ async function getUserFromToken(token: string) {
         // @ts-ignore
         where: { id: decodedToken.id },
         select: {
-            id: true, name: true, email: true 
+            id: true, name: true, email: true
         }
     })
     return user
@@ -47,6 +47,30 @@ app.post('/sign-in', async (req, res) => {
     }
 })
 
+app.post('/sign-up', async (req, res) => {
+    const { email, password, name, phone, address, dateOfBirth } = req.body
+
+    try {
+        const hash = bcrypt.hashSync(password, 8)
+        const user = await prisma.user.create({
+            data: {
+                email,
+                password: hash,
+                name,
+                phone,
+                address,
+                dateOfBirth
+            },
+            // select: {}
+        }) 
+        res.send({ user, token: createToken(user.id) })
+
+    } catch (err) {
+        res.status(400).send({ error: 'User/password invalid.' })
+    }
+
+})
+
 app.patch('/changePassword', async (req, res) => {
     const { email, password, newPassword } = req.body
     const user = await prisma.user.findFirst({ where: { email: email } })
@@ -54,11 +78,12 @@ app.patch('/changePassword', async (req, res) => {
     if (user && passwordMatches) {
         try {
             const hash = bcrypt.hashSync(newPassword, 8)
-            const updateUser = await prisma.user.update({ 
-                where: { 
-                    email: email, 
-                }, 
-                data: { password: hash } })
+            const updateUser = await prisma.user.update({
+                where: {
+                    email: email,
+                },
+                data: { password: hash }
+            })
             const { id, name } = user
             res.send({ user: { id, name, email }, token: createToken(user.id) })
         } catch (err) {
