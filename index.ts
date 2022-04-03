@@ -23,11 +23,20 @@ async function getUserFromToken(token: string) {
         // @ts-ignore
         where: { id: decodedToken.id },
         select: {
-            id: true, name: true, email: true
+            id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true   
         }
     })
     return user
 }
+
+app.get('/users', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany()
+        res.send(users)
+    } catch (err) {
+        res.status(400).send(err.message)
+    }
+})
 
 app.post('/sign-in', async (req, res) => {
     const { email, password } = req.body
@@ -64,7 +73,6 @@ app.post('/sign-up', async (req, res) => {
             // select: {}
         }) 
         res.send({ user, token: createToken(user.id) })
-
     } catch (err) {
         res.status(400).send({ error: 'User/password invalid.' })
     }
@@ -91,6 +99,18 @@ app.patch('/changePassword', async (req, res) => {
             res.status(400).send({ error: 'User/password invalid.' })
         }
     } else res.status(400).send({ error: 'User/password invalid.' })
+})
+
+app.get('/validate', async (req, res) => {
+    const token = req.headers.authorization
+
+    try {
+        // @ts-ignore
+        const user = await getUserFromToken(token)
+        res.send(user)
+    } catch (err) {
+        res.status(400).send(err.message)
+    }
 })
 
 app.listen(PORT, () => {
