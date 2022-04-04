@@ -23,8 +23,7 @@ async function getUserFromToken(token: string) {
         // @ts-ignore
         where: { id: decodedToken.id },
         select: {
-            id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true   
-        }
+            id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
     })
     return user
 }
@@ -46,8 +45,12 @@ app.post('/sign-in', async (req, res) => {
         })
         const passwordMatches = bcrypt.compareSync(password, user.password)
         if (user && passwordMatches) {
-            const { id, name, email } = user
-            res.send({ user: { id, name, email }, token: createToken(user.id) })
+            const userToSend = await prisma.user.findUnique({
+                where: { email: email },
+                select: {
+                    id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
+            })
+            res.send({ user: userToSend, token: createToken(user.id) })
         } else {
             throw Error()
         }
@@ -70,7 +73,8 @@ app.post('/sign-up', async (req, res) => {
                 address,
                 dateOfBirth
             },
-            // select: {}
+            select: {
+                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
         }) 
         res.send({ user, token: createToken(user.id) })
     } catch (err) {
