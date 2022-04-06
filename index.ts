@@ -30,7 +30,11 @@ async function getUserFromToken(token: string) {
 
 app.get('/users', async (req, res) => {
     try {
-        const users = await prisma.user.findMany()
+        const users = await prisma.user.findMany({
+            select: {
+                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}
+                }
+        })
         res.send(users)
     } catch (err) {
         res.status(400).send(err.message)
@@ -112,6 +116,64 @@ app.get('/validate', async (req, res) => {
         // @ts-ignore
         const user = await getUserFromToken(token)
         res.send(user)
+    } catch (err) {
+        res.status(400).send(err.message)
+    }
+})
+
+app.get('/account/:id', async (req, res) => {
+    const { id } = req.params
+    try {
+        const account = await prisma.account.findUnique({
+            where: { id: Number(id) },
+
+        })
+        res.send(account)
+    } catch (err) {
+        res.status(400).send(err.message)
+    }
+})
+
+app.post('/createTransfer', async (req, res) => {
+    const { fromAccountId, toAccountId, amount } = req.body
+    try {
+        const fromAccount = await prisma.account.findUnique({
+            where: { id: fromAccountId }
+        })
+        const toAccount = await prisma.account.findUnique({
+            where: { id: toAccountId }
+        })
+        if (fromAccount.amountInAccount < amount) {
+            throw Error('Not enough money.')
+        }
+        const fromAccountUpdate = await prisma.account.update({
+            where: { id: fromAccountId },
+            // @ts-ignore
+            data: { amountInAccount: fromAccount.amountInAccount - Number(amount)}
+        })
+        const toAccountUpdate = await prisma.account.update({
+            where: { id: Number(toAccountId) },
+            data: { amountInAccount: Number(toAccount.amountInAccount) + Number(amount) }
+        })
+        const firstTransaction = await prisma.transaction.create({
+            data: {
+                account: { connect: { id: fromAccountId } },
+                receiver:toAccountId,
+                sender: fromAccountId,
+                isPositive: false,
+                amount: amount            
+            }
+        })
+        const secondTransaction = await prisma.transaction.create({
+            data: {
+                account: { connect: { id: Number(toAccountId) } },
+                receiver: Number(toAccountId),
+                sender: Number(fromAccountId),
+                isPositive: true,
+                amount: amount
+            }
+        })
+        res.send({fromAccountUpdate, toAccountUpdate, firstTransaction, secondTransaction})
     } catch (err) {
         res.status(400).send(err.message)
     }
