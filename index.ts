@@ -23,7 +23,8 @@ async function getUserFromToken(token: string) {
         // @ts-ignore
         where: { id: decodedToken.id },
         select: {
-            id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
+            id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include: { transactions: true } }
+        }
     })
     return user
 }
@@ -32,8 +33,8 @@ app.get('/users', async (req, res) => {
     try {
         const users = await prisma.user.findMany({
             select: {
-                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}
-                }
+                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include: { transactions: true } }
+            }
         })
         res.send(users)
     } catch (err) {
@@ -52,7 +53,8 @@ app.post('/sign-in', async (req, res) => {
             const userToSend = await prisma.user.findUnique({
                 where: { email: email },
                 select: {
-                    id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
+                    id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include: { transactions: true } }
+                }
             })
             res.send({ user: userToSend, token: createToken(user.id) })
         } else {
@@ -78,8 +80,9 @@ app.post('/sign-up', async (req, res) => {
                 dateOfBirth
             },
             select: {
-                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include:{ transactions: true }}}
-        }) 
+                id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include: { transactions: true } }
+            }
+        })
         res.send({ user, token: createToken(user.id) })
     } catch (err) {
         res.status(400).send({ error: 'User/password invalid.' })
@@ -138,18 +141,18 @@ app.post('/createTransfer', async (req, res) => {
     const { fromAccountId, toAccountId, amount } = req.body
     try {
         const fromAccount = await prisma.account.findUnique({
-            where: { id: fromAccountId }
+            where: { id: Number(fromAccountId) }
         })
         const toAccount = await prisma.account.findUnique({
-            where: { id: toAccountId }
+            where: { id: Number(toAccountId) }
         })
-        if (fromAccount.amountInAccount < amount) {
+        if (Number(fromAccount.amountInAccount) < Number(amount)) {
             throw Error('Not enough money.')
         }
         const fromAccountUpdate = await prisma.account.update({
-            where: { id: fromAccountId },
+            where: { id: Number(fromAccountId) },
             // @ts-ignore
-            data: { amountInAccount: fromAccount.amountInAccount - Number(amount)}
+            data: { amountInAccount: fromAccount.amountInAccount - Number(amount) }
         })
         const toAccountUpdate = await prisma.account.update({
             where: { id: Number(toAccountId) },
@@ -157,11 +160,11 @@ app.post('/createTransfer', async (req, res) => {
         })
         const firstTransaction = await prisma.transaction.create({
             data: {
-                account: { connect: { id: fromAccountId } },
-                receiver:toAccountId,
-                sender: fromAccountId,
+                account: { connect: { id: Number(fromAccountId) } },
+                receiver: Number(toAccountId),
+                sender: Number(fromAccountId),
                 isPositive: false,
-                amount: amount            
+                amount: amount
             }
         })
         const secondTransaction = await prisma.transaction.create({
@@ -173,7 +176,7 @@ app.post('/createTransfer', async (req, res) => {
                 amount: amount
             }
         })
-        res.send({fromAccountUpdate, toAccountUpdate, firstTransaction, secondTransaction})
+        res.send({ fromAccountUpdate, toAccountUpdate, firstTransaction, secondTransaction })
     } catch (err) {
         res.status(400).send(err.message)
     }
