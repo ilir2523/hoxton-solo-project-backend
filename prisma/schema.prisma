@@ -18,27 +18,28 @@ model User {
   phone       String
   address     String
   dateOfBirth String
-  // accounts    Account[]
+  accounts    Account[]
 }
 
-// model Account {
-//   id              Int           @id @default(autoincrement())
-//   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   accountNumber   Int           @unique
-//   type            String
-//   currency        String
-//   title           String
-//   amountInAccount Decimal
-//   userId          Int
-//   transactions    Transaction[]
-// }
+model Account {
+  id              Int           @id @default(autoincrement())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountNumber   Int           @unique
+  type            String
+  currency        String
+  title           String
+  amountInAccount Decimal
+  userId          Int
+  transactions    Transaction[]
+}
 
-// model Transaction {
-//   id               Int      @id @default(autoincrement())
-//   account          Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-//   amount           Decimal
-//   receiverOrSender String
-//   completedAt      DateTime @default(now())
-//   isPositive       Boolean
-//   accountId        Int
-// }
+model Transaction {
+  id               Int      @id @default(autoincrement())
+  account          Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount           Decimal
+  receiver         Int
+  sender           Int    
+  completedAt      DateTime @default(now())
+  isPositive       Boolean
+  accountId        Int
+}
