@@ -26,7 +26,7 @@ async function getUserFromToken(token: string) {
             id: true, name: true, email: true, address: true, phone: true, dateOfBirth: true, accounts: { include: { transactions: true } }
         }
     })
-    return user
+    return (user)
 }
 
 app.get('/users', async (req, res) => {
@@ -139,10 +139,18 @@ app.get('/account/:id', async (req, res) => {
 
 app.post('/createTransfer', async (req, res) => {
     const { fromAccountId, toAccountId, amount } = req.body
+    const token = req.headers.authorization
+
     try {
+        const user = await getUserFromToken(token)
+        console.log(user)
         const fromAccount = await prisma.account.findUnique({
             where: { id: Number(fromAccountId) }
         })
+
+        if (user.accounts[0].id !== fromAccount.id) throw Error('You are not allowed to transfer from this account.')
+        if (fromAccountId === toAccountId) throw Error('You are not allowed to transfer to your account.')
+
         const toAccount = await prisma.account.findUnique({
             where: { id: Number(toAccountId) }
         })
