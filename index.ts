@@ -97,25 +97,25 @@ app.patch('/changePassword', async (req, res) => {
     const authUser = await getUserFromToken(token)
     const user = await prisma.user.findFirst({ where: { email: email } })
 
-    if(authUser.email === user.email) {
-    const passwordMatches = bcrypt.compareSync(password, user.password)
-    if (user && passwordMatches) {
-        try {
-            const hash = bcrypt.hashSync(newPassword, 8)
-            const updateUser = await prisma.user.update({
-                where: {
-                    email: email,
-                },
-                data: { password: hash }
-            })
-            const { id, name } = updateUser
-            res.send({ user: { id, name, email }, token: createToken(updateUser.id) })
-        } catch (err) {
-            // @ts-ignore
-            res.status(400).send({ error: 'User/password invalid.' })
-        }
-    } else res.status(400).send({ error: 'User/password invalid.' })
-}else res.status(401).send({ error: 'Unauthorized' })
+    if (authUser.email === user.email) {
+        const passwordMatches = bcrypt.compareSync(password, user.password)
+        if (user && passwordMatches) {
+            try {
+                const hash = bcrypt.hashSync(newPassword, 8)
+                const updateUser = await prisma.user.update({
+                    where: {
+                        email: email,
+                    },
+                    data: { password: hash }
+                })
+                const { id, name } = updateUser
+                res.send({ user: { id, name, email }, token: createToken(updateUser.id) })
+            } catch (err) {
+                // @ts-ignore
+                res.status(400).send({ error: 'User/password invalid.' })
+            }
+        } else res.status(400).send({ error: 'User/password invalid.' })
+    } else res.status(401).send({ error: 'Unauthorized' })
 })
 
 app.get('/validate', async (req, res) => {
@@ -159,7 +159,7 @@ app.post('/createTransfer', async (req, res) => {
 
         console.log(toAccount)
 
-        if(!toAccount) throw Error('Account not found')
+        if (!toAccount) throw Error('Account not found')
 
         if (user.accounts[0].id !== fromAccount.id) throw Error('You are not allowed to transfer from this account.')
         if (fromAccountId === toAccountId) throw Error('You are not allowed to transfer to your account.')
